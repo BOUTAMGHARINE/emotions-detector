@@ -1,0 +1,83 @@
+# Python virtual environment
+
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# Python packaging
+
+*.egg-info/
+dist/
+build/
+
+# Environment / secrets
+
+.env
+.env.*
+
+# IDE / editors
+
+.vscode/
+.idea/
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# Logs
+
+*.log
+
+# TensorBoard logs
+
+logs/
+tensorboard_logs/
+runs/
+
+# Temporary files
+
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Generated model/checkpoint files
+
+*.h5
+*.hdf5
+*.ckpt
+*.weights.h5
+
+# Keep the required final model explicitly
+
+!results/model/final_emotion_model.keras
+
+# Python test/cache
+
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+EOF
+
+# Local generated files
+
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+data/
