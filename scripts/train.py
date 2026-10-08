@@ -1,30 +1,16 @@
-import pandas as pd 
-import numpy as np 
+import numpy as np
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+from preprocess import train
 
 
 
 
+X = np.array([
+    np.array(pixels.split(), dtype=np.float32)
+    for pixels in train["pixels"]
+])
 
-train = pd.read_csv("../data/train.csv")
-test = pd.read_csv("../data/test.csv")
-
-
-
-
-print(train.isnull().sum())
-print(train.shape[0]," images,")
-print("les classe sont :",train["emotion"].unique())
-print("nombres des pixels par image, ",len(np.array(train["pixels"].iloc[0].split(), dtype=np.float32)))
-print("destrubution de 7 emotion",train["emotion"].value_counts())
-print("demention de l image:",len(train["pixels"].iloc[0]))
-
-pixels = np.array(train["pixels"].iloc[0].split(), dtype=np.float32)
-
-image = pixels.reshape(48, 48)
-
-print("Dimension de l'image :", image.shape)
-
-
-
-
-
+y = train["emotion"].values
