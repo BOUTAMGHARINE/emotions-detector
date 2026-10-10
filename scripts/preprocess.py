@@ -7,6 +7,10 @@ train = pd.read_csv("../data/train.csv")
 test = pd.read_csv("../data/test.csv")
 
 
+
+
+
+
 # Analyse du dataset
 
 # Valeurs manquantes
@@ -50,6 +54,18 @@ emotion_names = {
 train["emotion_name"] = train["emotion"].map(emotion_names)
 
 
+def convert_images_to_numeric(df) :
+    images_numerics = []
+    for i in range(len(df)) :
+        pixels = np.array(
+            df["pixels"].iloc[i].split(),dtype=np.float32
+        )
+        images_numerics.append(pixels.reshape(48,48))
+    
+    
+    return images_numerics
+
+
 # Visualisation
 def show_images():
 
@@ -69,7 +85,7 @@ def show_images():
     plt.title("Emotion: Disgust")
     plt.axis("off")
     plt.tight_layout()
-    plt.savefig("../results/sample_image_disgust.png")
+    plt.savefig("./sample_image_disgust.png")
     plt.close()
 
 
@@ -91,8 +107,28 @@ def show_images():
         plt.axis("off")
 
     plt.tight_layout()
-    plt.savefig("../results/sample_images.png")
+    plt.savefig("./sample_images.png")
     plt.close()
 
 
+
+def preprocessing(train, test):
+    images_train = convert_images_to_numeric(train)
+    images_test = convert_images_to_numeric(test)
+
+    images_train = np.array(images_train, dtype=np.float32)
+    images_test = np.array(images_test, dtype=np.float32)
+
+    images_train = np.expand_dims(images_train, axis=-1)
+    images_test = np.expand_dims(images_test, axis=-1)
+
+    images_train /= 255.0
+    images_test /= 255.0
+
+    return images_train, images_test
+
+
+
+
 show_images()
+
