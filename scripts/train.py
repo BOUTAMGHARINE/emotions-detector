@@ -5,6 +5,9 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras import layers,models
 from sklearn.metrics import classification_report, confusion_matrix
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.utils.class_weight import compute_class_weight
+
 
 
 
@@ -36,39 +39,65 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 
 
+
 def build_model():
     model = models.Sequential([
-        
-        layers.Input(shape=(48,48,1)),
-        
-        layers.Conv2D(32, (3, 3), activation="relu"),
+        layers.Conv2D(
+            32,
+            (3, 3),
+            activation="relu",
+            padding="same",
+            input_shape=(48, 48, 1)
+        ),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        
-        layers.Conv2D(64, (3, 3), activation="relu"),
+        layers.Dropout(0.25),
+
+        layers.Conv2D(
+            64,
+            (3, 3),
+            activation="relu",
+            padding="same"
+        ),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        
-        layers.Conv2D(128, (3, 3), activation="relu"),
+        layers.Dropout(0.25),
+
+        layers.Conv2D(
+            128,
+            (3, 3),
+            activation="relu",
+            padding="same"
+        ),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        
-        layers.Conv2D(150, (3, 3), activation="relu"),
+        layers.Dropout(0.30),
+
+        layers.Conv2D(
+            256,
+            (3, 3),
+            activation="relu",
+            padding="same"
+        ),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        
-        layers.Conv2D(200, (3, 3), activation="relu"),
-        layers.MaxPooling2D((2, 2)),     
-        
+        layers.Dropout(0.30),
+
         layers.Flatten(),
-        layers.Dense(128, activation="relu"),    
+
+        layers.Dense(256, activation="relu"),
+        layers.BatchNormalization(),
         layers.Dropout(0.5),
-        
+
         layers.Dense(7, activation="softmax")
-        
-        
     ])
+
     model.compile(
         optimizer="adam",
         loss="sparse_categorical_crossentropy",
-         metrics=["accuracy"]
+        metrics=["accuracy"]
     )
+
     return model
     
 model = build_model()
@@ -82,7 +111,7 @@ history = model.fit(
     y_train,
     validation_data=(X_val, y_val),
     epochs=15,
-    batch_size=64
+    batch_size=64,
 )
 
 
