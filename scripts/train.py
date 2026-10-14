@@ -7,6 +7,7 @@ from tensorflow.keras import layers,models
 from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.utils.class_weight import compute_class_weight
+from tensorflow import keras
 
 
 
@@ -39,12 +40,11 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 
 
-
 def build_model():
     model = models.Sequential([
+        # Bloc 1
         layers.Conv2D(
-            32,
-            (3, 3),
+            32, (3, 3),
             activation="relu",
             padding="same",
             input_shape=(48, 48, 1)
@@ -53,9 +53,9 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.25),
 
+        # Bloc 2
         layers.Conv2D(
-            64,
-            (3, 3),
+            64, (3, 3),
             activation="relu",
             padding="same"
         ),
@@ -63,9 +63,9 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.25),
 
+        # Bloc 3
         layers.Conv2D(
-            128,
-            (3, 3),
+            128, (3, 3),
             activation="relu",
             padding="same"
         ),
@@ -73,9 +73,9 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.30),
 
+        # Bloc 4
         layers.Conv2D(
-            256,
-            (3, 3),
+            256, (3, 3),
             activation="relu",
             padding="same"
         ),
@@ -83,8 +83,17 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.30),
 
+        # Bloc 5
+        layers.Conv2D(
+            512, (3, 3),
+            activation="relu",
+            padding="same"
+        ),
+        layers.BatchNormalization(),
+        layers.Dropout(0.30),
+
+        # Classification
         layers.Flatten(),
-
         layers.Dense(256, activation="relu"),
         layers.BatchNormalization(),
         layers.Dropout(0.5),
@@ -99,10 +108,30 @@ def build_model():
     )
 
     return model
-    
+
+
 model = build_model()
 model.summary()
 
+
+callbacks = [
+    keras.callbacks.ModelCheckpoint(
+        "best_model.keras",
+        monitor="val_loss",
+        save_best_only=True
+    ),
+    keras.callbacks.EarlyStopping(
+        monitor="val_loss",
+        patience=5,
+        restore_best_weights=True
+    ),
+    keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.5,
+        patience=2,
+        min_lr=1e-6
+    )
+]
 
 
 
@@ -110,8 +139,9 @@ history = model.fit(
     X_train,
     y_train,
     validation_data=(X_val, y_val),
-    epochs=15,
+    epochs=20,
     batch_size=64,
+    callbacks=callbacks
 )
 
 
@@ -129,6 +159,7 @@ print(f"Validation accuracy : {val_accuracy:.2%}")
 y_pred_prob = model.predict(X_val)
 y_pred = np.argmax(y_pred_prob, axis=1)
 
+
 emotion_names = [
     "Angry", "Disgust", "Fear", "Happy",
     "Sad", "Surprise", "Neutral"
@@ -144,4 +175,7 @@ print(classification_report(
 
 print("Matrice de confusion :")
 print(confusion_matrix(y_val, y_pred))
+
+
+
 
