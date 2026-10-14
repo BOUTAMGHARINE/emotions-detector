@@ -19,7 +19,7 @@ from tensorflow import keras
 
 
 train = pd.read_csv("../data/train.csv")
-test = pd.read_csv("../data/test.csv")
+test = pd.read_csv("../data/test_with_emotions.csv")
 
 
 
@@ -51,7 +51,7 @@ def build_model():
         ),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.25),
+        layers.Dropout(0.3),
 
         # Bloc 2
         layers.Conv2D(
@@ -61,7 +61,7 @@ def build_model():
         ),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.25),
+        layers.Dropout(0.3),
 
         # Bloc 3
         layers.Conv2D(
