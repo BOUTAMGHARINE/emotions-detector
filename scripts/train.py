@@ -8,6 +8,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow import keras
+import matplotlib.pyplot as plt
 
 
 
@@ -111,12 +112,13 @@ def build_model():
 
 
 model = build_model()
-model.summary()
+with open("../results/model/final_emotion_model_arch.txt", "w") as f:
+    model.summary(print_fn=lambda line: f.write(line + "\n"))
 
 
 callbacks = [
     keras.callbacks.ModelCheckpoint(
-        "best_model.keras",
+        "../results/model/final_emotion_model.keras",
         monitor="val_loss",
         save_best_only=True
     ),
@@ -130,7 +132,11 @@ callbacks = [
         factor=0.5,
         patience=2,
         min_lr=1e-6
-    )
+    ),
+    keras.callbacks.TensorBoard(
+    log_dir="../results/model/logs",
+    histogram_freq=1
+)
 ]
 
 
@@ -175,6 +181,43 @@ print(classification_report(
 
 print("Matrice de confusion :")
 print(confusion_matrix(y_val, y_pred))
+
+
+
+
+# learn  curve 
+
+history_dict  = history.history
+
+epochs = range(1, len(history_dict["loss"]) + 1)
+
+# Créer deux graphiques côte à côte
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Graphique 1 : accuracy
+axes[0].plot(epochs, history_dict["accuracy"], label="Training accuracy")
+axes[0].plot(epochs, history_dict["val_accuracy"], label="Validation accuracy")
+axes[0].set_title("Model accuracy")
+axes[0].set_xlabel("Epoch")
+axes[0].set_ylabel("Accuracy")
+axes[0].legend()
+axes[0].grid(True)
+
+# Graphique 2 : loss
+axes[1].plot(epochs, history_dict["loss"], label="Training loss")
+axes[1].plot(epochs, history_dict["val_loss"], label="Validation loss")
+axes[1].set_title("Model loss")
+axes[1].set_xlabel("Epoch")
+axes[1].set_ylabel("Loss")
+axes[1].legend()
+axes[1].grid(True)
+
+# Ajuster l'espacement et sauvegarder l'image
+plt.tight_layout()
+plt.savefig("../results/model/learning_curves.png", dpi=150)
+plt.show()
+
+
 
 
 
