@@ -1,42 +1,70 @@
-import pandas as pd
+
 import numpy as np
 from tensorflow.keras.models import load_model
-from sklearn.metrics import accuracy_score, log_loss
 
-# Charger le modèle entraîné
-model = load_model("best_model.keras")
-# Charger les données de test avec les labels réels
-test = pd.read_csv("../data/test_with_emotions.csv")
+from preprocess import preprocess_video
 
-# Préparer les images
-X_test = np.array([
-    np.array(row.split(), dtype=np.float32).reshape(48, 48)
-    for row in test["pixels"]
-])
 
-# Normaliser les pixels : [0, 255] -> [0, 1]
-X_test = X_test / 255.0
+# Correspondance entre les classes et les émotions
+EMOTION_NAMES = {
+    0: "Angry",
+    1: "Disgust",
+    2: "Fear",
+    3: "Happy",
+    4: "Sad",
+    5: "Surprise",
+    6: "Neutral",
+}
 
-# Ajouter la dimension du canal : (N, 48, 48, 1)
-X_test = np.expand_dims(X_test, axis=-1)
 
-# Récupérer les émotions réelles
-y_test = test["emotion"].to_numpy()
+# Chemins des fichiers
+VIDEO_PATH = (
+    "../results/preprocessing_test/"
+    "4769799-hd_1080_1920_25fps.mp4"
+)
 
-# Prédire les probabilités pour les 7 émotions
-y_proba = model.predict(X_test)
+MODEL_PATH = "../results/model/final_emotion_model.keras"
 
-# Obtenir la classe prédite
-y_pred = np.argmax(y_proba, axis=1)
 
-# Calculer les métriques
-accuracy = accuracy_score(y_test, y_pred)
-loss = log_loss(y_test, y_proba, labels=np.arange(7))
+def predict_video():
+    """Détecter les visages dans une vidéo et prédire leurs émotions."""
 
-print(f"Test accuracy: {accuracy * 100:.2f}%")
-print(f"Test loss: {loss:.4f}")
+    # 1. Prétraiter la vidéo et extraire les visages
+    print("Prétraitement de la vidéo...")
 
-if accuracy > 0.60:
-    print("Objectif atteint : accuracy supérieure à 60 %.")
-else:
-    print("Objectif non atteint : accuracy inférieure ou égale à 60 %.")
+    faces = preprocess_video(VIDEO_PATH)
+
+    if len(faces) == 0:
+        print("Aucun visage détecté dans la vidéo.")
+        return
+
+    print(f"Nombre de visages extraits : {len(faces)}")
+
+    # 2. Charger le modèle entraîné une seule fois
+    print("Chargement du modèle...")
+
+    model = load_model(MODEL_PATH)
+
+    # 3. Prédire les probabilités des sept émotions
+    print("Prédiction des émotions...")
+
+    predictions = model.predict(faces, verbose=0)
+
+    # 4. Afficher les résultats
+    print("\nRésultats des prédictions :")
+
+    for i, probabilities in enumerate(predictions):
+        emotion_id = int(np.argmax(probabilities))
+        confidence = float(probabilities[emotion_id])
+
+        emotion = EMOTION_NAMES[emotion_id]
+
+        print(
+            f"Visage {i + 1}: "
+            f"{emotion} "
+            f"(confiance : {confidence:.2%})"
+        )
+
+
+if __name__ == "__main__":
+    predict_video()
