@@ -13,36 +13,36 @@ test = pd.read_csv("../data/test_with_emotions.csv")
 
 
 
-# Analyse du dataset
+# Dataset analysis
 
-# Valeurs manquantes
+# Missing values
 print(train.isnull().sum())
 
-# Nombre d'images
+# Number of images
 print(train.shape[0], "images")
 
-# Classes présentes
-print("Les classes sont :", train["emotion"].unique())
+# Available classes
+print("The classes are:", train["emotion"].unique())
 
-# Nombre de pixels par image
+# Number of pixels per image
 pixels = np.array(
     train["pixels"].iloc[0].split(),
     dtype=np.float32
 )
 
-print("Nombre de pixels par image :", len(pixels))
+print("Number of pixels per image:", len(pixels))
 
-# Distribution des émotions
-print("Distribution des 7 émotions :")
+# Emotion distribution
+print("Distribution of the 7 emotions:")
 print(train["emotion"].value_counts())
 
-# Dimension de l'image
+# Image dimensions
 image = pixels.reshape(48, 48)
 
-print("Dimension de l'image :", image.shape)
+print("Image dimensions:", image.shape)
 
 
-# Noms des émotions
+# Emotion names
 emotion_names = {
     0: "Angry",
     1: "Disgust",
@@ -73,7 +73,7 @@ def show_images():
 
     plt.figure(figsize=(12, 5))
 
-    # Image Disgust
+    # Disgust image
     disgust_image = train[
         train["emotion"] == 1
     ]["pixels"].iloc[0]
@@ -140,13 +140,13 @@ def preprocess_video(video_path):
     output_dir = "../results/preprocessing_test"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Ouvrir la vidéo
+    # Open the video
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
-        raise ValueError(f"Impossible d'ouvrir la vidéo : {video_path}")
+        raise ValueError(f"Unable to open video: {video_path}")
 
-    # Détecteur de visages Haar Cascade fourni par OpenCV
+    # OpenCV's Haar Cascade face detector
     cascade_path = (
         cv2.data.haarcascades
         + "haarcascade_frontalface_default.xml"
@@ -155,7 +155,7 @@ def preprocess_video(video_path):
 
     if face_detector.empty():
         cap.release()
-        raise RuntimeError("Impossible de charger le détecteur de visages.")
+        raise RuntimeError("Unable to load the face detector.")
 
     processed_faces = []
     frame_index = 0
@@ -167,7 +167,7 @@ def preprocess_video(video_path):
         if not ret:
             break
 
-        # Traiter une frame sur 10 pour commencer
+        # Process every 10th frame initially
         if frame_index % 10 == 0:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -179,21 +179,21 @@ def preprocess_video(video_path):
             )
 
             for (x, y, w, h) in faces:
-                # Recadrer le visage
+                # Crop the face
                 face = gray[y:y + h, x:x + w]
 
-                # Redimensionner à 48 × 48
+                # Resize to 48 x 48
                 face = cv2.resize(face, (48, 48))
 
-                # Normaliser les pixels entre 0 et 1
+                # Normalize pixel values to the range 0-1
                 face = face.astype(np.float32) / 255.0
 
-                # Ajouter le canal pour le CNN
+                # Add the channel dimension for the CNN
                 face = np.expand_dims(face, axis=-1)
 
                 processed_faces.append(face)
 
-                # Enregistrer une image de vérification
+                # Save a sample image for verification
                 image_to_save = (face[:, :, 0] * 255).astype(np.uint8)
                 image_path = os.path.join(
                     output_dir,
@@ -206,11 +206,11 @@ def preprocess_video(video_path):
 
     cap.release()
 
-    print(f"Frames parcourues : {frame_index}")
-    print(f"Visages prétraités : {saved_count}")
+    print(f"Frames processed: {frame_index}")
+    print(f"Faces preprocessed: {saved_count}")
 
     if not processed_faces:
-        print("Aucun visage détecté dans la vidéo.")
+        print("No faces detected in the video.")
         return np.empty((0, 48, 48, 1), dtype=np.float32)
 
     return np.array(processed_faces, dtype=np.float32)

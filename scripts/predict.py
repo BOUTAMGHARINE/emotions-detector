@@ -5,7 +5,7 @@ from tensorflow.keras.models import load_model
 from preprocess import preprocess_video
 
 
-# Correspondance entre les classes et les émotions
+# Mapping between classes and emotions
 EMOTION_NAMES = {
     0: "Angry",
     1: "Disgust",
@@ -17,7 +17,7 @@ EMOTION_NAMES = {
 }
 
 
-# Chemins des fichiers
+# File paths
 VIDEO_PATH = (
     "../results/preprocessing_test/"
     "4769799-hd_1080_1920_25fps.mp4"
@@ -27,31 +27,31 @@ MODEL_PATH = "../results/model/final_emotion_model.keras"
 
 
 def predict_video():
-    """Détecter les visages dans une vidéo et prédire leurs émotions."""
+    """Detect faces in a video and predict their emotions."""
 
-    # 1. Prétraiter la vidéo et extraire les visages
-    print("Prétraitement de la vidéo...")
+    # 1. Preprocess the video and extract faces
+    print("Preprocessing video...")
 
     faces = preprocess_video(VIDEO_PATH)
 
     if len(faces) == 0:
-        print("Aucun visage détecté dans la vidéo.")
+        print("No faces detected in the video.")
         return
 
-    print(f"Nombre de visages extraits : {len(faces)}")
+    print(f"Number of faces extracted: {len(faces)}")
 
-    # 2. Charger le modèle entraîné une seule fois
-    print("Chargement du modèle...")
+    # 2. Load the trained model once
+    print("Loading model...")
 
     model = load_model(MODEL_PATH)
 
-    # 3. Prédire les probabilités des sept émotions
-    print("Prédiction des émotions...")
+    # 3. Predict the probabilities for the seven emotions
+    print("Predicting emotions...")
 
     predictions = model.predict(faces, verbose=0)
 
-    # 4. Afficher les résultats
-    print("\nRésultats des prédictions :")
+    # 4. Display the results
+    print("\nPrediction results:")
 
     for i, probabilities in enumerate(predictions):
         emotion_id = int(np.argmax(probabilities))
@@ -62,7 +62,7 @@ def predict_video():
         print(
             f"Visage {i + 1}: "
             f"{emotion} "
-            f"(confiance : {confidence:.2%})"
+            f"(confidence: {confidence:.2%})"
         )
 
 

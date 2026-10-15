@@ -20,50 +20,50 @@ EMOTION_NAMES = [
 
 
 def evaluate_model():
-    # 1. Charger les données de test
+    # 1. Load the test data
     test = pd.read_csv(TEST_PATH)
 
-    # Vérifier les colonnes nécessaires
+    # Check for the required columns
     required_columns = {"pixels", "emotion"}
     if not required_columns.issubset(test.columns):
         raise ValueError(
-            "Le fichier de test doit contenir les colonnes "
-            "'pixels' et 'emotion'."
+            "The test file must contain the columns "
+            "'pixels' and 'emotion'."
         )
 
-    # 2. Convertir les pixels en images 48x48
+    # 2. Convert the pixels into 48x48 images
     X_test = np.array([
         np.array(row.split(), dtype=np.float32).reshape(48, 48)
         for row in test["pixels"]
     ])
 
-    # 3. Normaliser les pixels entre 0 et 1
+    # 3. Normalize pixel values to the range 0-1
     X_test /= 255.0
 
-    # 4. Ajouter le canal des images en niveaux de gris
+    # 4. Add the channel dimension for grayscale images
     X_test = np.expand_dims(X_test, axis=-1)
 
-    # 5. Récupérer les vraies émotions
+    # 5. Get the ground-truth emotions
     y_test = test["emotion"].to_numpy()
 
-    # 6. Charger le modèle
+    # 6. Load the model
     model = load_model(MODEL_PATH)
 
-    # 7. Prédire les probabilités
+    # 7. Predict probabilities
     y_proba = model.predict(X_test, verbose=0)
 
-    # 8. Obtenir les classes prédites
+    # 8. Get the predicted classes
     y_pred = np.argmax(y_proba, axis=1)
 
-    # 9. Calculer les métriques
+    # 9. Calculate the metrics
     accuracy = accuracy_score(y_test, y_pred)
     loss = log_loss(y_test, y_proba, labels=np.arange(7))
 
-    print(f"Nombre d'images testées : {len(X_test)}")
+    print(f"Number of test images: {len(X_test)}")
     print(f"Test accuracy : {accuracy:.2%}")
     print(f"Test loss : {loss:.4f}")
 
-    print("\nRapport de classification :")
+    print("\nClassification report:")
     print(classification_report(
         y_test,
         y_pred,
@@ -73,9 +73,9 @@ def evaluate_model():
     ))
 
     if accuracy > 0.60:
-        print("Objectif atteint : accuracy supérieure à 60 %.")
+        print("Goal met: accuracy is above 60%.")
     else:
-        print("Objectif non atteint : accuracy inférieure ou égale à 60 %.")
+        print("Goal not met: accuracy is 60% or lower.")
 
 
 if __name__ == "__main__":

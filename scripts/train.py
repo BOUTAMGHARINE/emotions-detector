@@ -43,7 +43,7 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 def build_model():
     model = models.Sequential([
-        # Bloc 1
+        # Block 1
         layers.Conv2D(
             32, (3, 3),
             activation="relu",
@@ -54,7 +54,7 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.3),
 
-        # Bloc 2
+        # Block 2
         layers.Conv2D(
             64, (3, 3),
             activation="relu",
@@ -64,7 +64,7 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.3),
 
-        # Bloc 3
+        # Block 3
         layers.Conv2D(
             128, (3, 3),
             activation="relu",
@@ -74,7 +74,7 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.30),
 
-        # Bloc 4
+        # Block 4
         layers.Conv2D(
             256, (3, 3),
             activation="relu",
@@ -84,7 +84,7 @@ def build_model():
         layers.MaxPooling2D((2, 2)),
         layers.Dropout(0.30),
 
-        # Bloc 5
+        # Block 5
         layers.Conv2D(
             512, (3, 3),
             activation="relu",
@@ -161,7 +161,7 @@ print(f"Validation accuracy : {val_accuracy:.2%}")
 
 
 
-# Prédictions sur les images de validation
+# Predictions on the validation images
 y_pred_prob = model.predict(X_val)
 y_pred = np.argmax(y_pred_prob, axis=1)
 
@@ -179,7 +179,7 @@ print(classification_report(
     zero_division=0
 ))
 
-print("Matrice de confusion :")
+print("Confusion matrix:")
 print(confusion_matrix(y_val, y_pred))
 
 
@@ -191,10 +191,10 @@ history_dict  = history.history
 
 epochs = range(1, len(history_dict["loss"]) + 1)
 
-# Créer deux graphiques côte à côte
+# Create two side-by-side plots
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-# Graphique 1 : accuracy
+# Plot 1: accuracy
 axes[0].plot(epochs, history_dict["accuracy"], label="Training accuracy")
 axes[0].plot(epochs, history_dict["val_accuracy"], label="Validation accuracy")
 axes[0].set_title("Model accuracy")
@@ -203,7 +203,7 @@ axes[0].set_ylabel("Accuracy")
 axes[0].legend()
 axes[0].grid(True)
 
-# Graphique 2 : loss
+# Plot 2: loss
 axes[1].plot(epochs, history_dict["loss"], label="Training loss")
 axes[1].plot(epochs, history_dict["val_loss"], label="Validation loss")
 axes[1].set_title("Model loss")
@@ -212,11 +212,10 @@ axes[1].set_ylabel("Loss")
 axes[1].legend()
 axes[1].grid(True)
 
-# Ajuster l'espacement et sauvegarder l'image
+# Adjust the spacing and save the image
 plt.tight_layout()
 plt.savefig("../results/model/learning_curves.png", dpi=150)
 plt.show()
-
 
 
 
