@@ -1,65 +1,69 @@
-
 import numpy as np
-import pandas as pd
 from tensorflow.keras.models import load_model
-from sklearn.metrics import accuracy_score, log_loss, classification_report
 
+from preprocess import preprocess_video
+
+
+# Mapping between classes and emotions
+EMOTION_NAMES = {
+    0: "Angry",
+    1: "Disgust",
+    2: "Fear",
+    3: "Happy",
+    4: "Sad",
+    5: "Surprise",
+    6: "Neutral",
+}
+
+
+# File paths
+VIDEO_PATH = (
+    "../results/preprocessing_test/"
+    "4769799-hd_1080_1920_25fps.mp4"
+)
 
 MODEL_PATH = "../results/model/final_emotion_model.keras"
-TEST_PATH = "../data/test_with_emotions.csv"
-
-EMOTION_NAMES = [
-    "Angry",
-    "Disgust",
-    "Fear",
-    "Happy",
-    "Sad",
-    "Surprise",
-    "Neutral",
-]
 
 
-def evaluate_model():
-    # 1. Load the test data
-    test = pd.read_csv(TEST_PATH)
+def predict_video():
+    """Detect faces in a video and predict their emotions."""
 
-  
-    # 2. Convert the pixels into 48x48 images
-    X_test = np.array([
-        np.array(row.split(), dtype=np.float32).reshape(48, 48)
-        for row in test["pixels"]
-    ])
+    # 1. Preprocess the video and extract faces
+    print("Preprocessing video...")
 
-    X_test /= 255.0
+    faces = preprocess_video(VIDEO_PATH)
 
-    X_test = np.expand_dims(X_test, axis=-1)
+    if len(faces) == 0:
+        print("No faces detected in the video.")
+        return
 
-    y_test = test["emotion"].to_numpy()
+    print(f"Number of faces extracted: {len(faces)}")
+
+    # 2. Load the trained model once
+    print("Loading model...")
 
     model = load_model(MODEL_PATH)
 
-    y_proba = model.predict(X_test, verbose=0)
+    # 3. Predict the probabilities for the seven emotions
+    print("Predicting emotions...")
 
-    y_pred = np.argmax(y_proba, axis=1)
+    predictions = model.predict(faces, verbose=0)
 
-    accuracy = accuracy_score(y_test, y_pred)
-    loss = log_loss(y_test, y_proba, labels=np.arange(7))
+    # 4. Display the results
+    print("\nPrediction results:")
 
-    print(f"Number of test images: {len(X_test)}")
-    print(f"Test accuracy : {accuracy:.2%}")
-    print(f"Test loss : {loss:.4f}")
+    for i, probabilities in enumerate(predictions):
+        emotion_id = int(np.argmax(probabilities))
+        confidence = float(probabilities[emotion_id])
 
-    print("\nClassification report:")
-    print(classification_report(
-        y_test,
-        y_pred,
-        labels=np.arange(7),
-        target_names=EMOTION_NAMES,
-        zero_division=0
-    ))
+        emotion = EMOTION_NAMES[emotion_id]
 
-    
+        print(
+            f"Visage {i + 1}: "
+            f"{emotion} "
+            f"(confidence: {confidence:.2%})"
+        )
 
 
 if __name__ == "__main__":
-    evaluate_model()
+    predict_video()
