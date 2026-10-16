@@ -1,11 +1,18 @@
 
 from datetime import datetime
+from pathlib import Path
 import time
 
 import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = PROJECT_ROOT / "results/model/final_emotion_model.keras"
+CAPTURE_DURATION_SECONDS = 20
+MIN_PREPROCESSED_IMAGES = 20
+OUTPUT_ROOT = PROJECT_ROOT / "results/preprocessing_test/webcam"
 
 # Mapping between classes and emotions
 EMOTION_NAMES = {
@@ -19,17 +26,10 @@ EMOTION_NAMES = {
 }
 
 
-# Path to the trained model
-MODEL_PATH = "../results/model/final_emotion_model.keras"
-
-
 def main():
-    # 1. Load the model once
-    print("Loading model...")
     model = load_model(MODEL_PATH)
-    print("Model loaded.")
 
-    # 2. Load the Haar Cascade face detector
+    #  Load the Haar Cascade face detector
     cascade_path = (
         cv2.data.haarcascades
         + "haarcascade_frontalface_default.xml"
@@ -42,6 +42,11 @@ def main():
             "Unable to load the face detector."
         )
 
+    capture_dir = OUTPUT_ROOT / datetime.now().strftime(
+        "capture_%Y%m%d_%H%M%S_%f"
+    )
+    capture_dir.mkdir(parents=True, exist_ok=False)
+
     # 3. Open the webcam
     camera = cv2.VideoCapture(0)
 
@@ -52,9 +57,16 @@ def main():
         )
 
     print("Webcam started.")
-    print("Press 'q' to quit.")
+    print(
+        f"Keep the webcam open for at least {CAPTURE_DURATION_SECONDS} "
+        f"seconds and until {MIN_PREPROCESSED_IMAGES} face images are saved."
+    )
+    print(f"Preprocessed images will be saved in: {capture_dir}")
 
     last_terminal_output = 0.0
+    saved_images = 0
+    capture_started = time.monotonic()
+    requirement_met = False
 
     try:
         while True:
@@ -62,8 +74,9 @@ def main():
             ret, frame = camera.read()
 
             if not ret:
-                print("Unable to read a frame from the webcam.")
-                break
+                raise RuntimeError("Unable to read a frame from the webcam.")
+
+            elapsed = time.monotonic() - capture_started
 
             # 5. Convert the frame to grayscale
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -78,13 +91,20 @@ def main():
 
             # 7. Process each detected face
             for (x, y, w, h) in faces:
-                face = gray[y:y + h, x:x + w]
+                face_image = cv2.resize(gray[y:y + h, x:x + w], (48, 48))
 
-                # Resize to match the model input
-                face = cv2.resize(face, (48, 48))
+                if saved_images < MIN_PREPROCESSED_IMAGES:
+                    image_name = f"face_{saved_images + 1:02d}.png"
+                    image_path = capture_dir / image_name
+                    if not cv2.imwrite(str(image_path), face_image):
+                        raise OSError(
+                            f"Unable to save preprocessed face image: "
+                            f"{image_path}"
+                        )
+                    saved_images += 1
 
                 # Normalize pixel values to the range 0-1
-                face = face.astype(np.float32) / 255.0
+                face = face_image.astype(np.float32) / 255.0
 
                 # Expected shape: (1, 48, 48, 1)
                 face = np.expand_dims(face, axis=-1)
@@ -135,18 +155,65 @@ def main():
                     cv2.LINE_AA,
                 )
 
-            # 10. Display the video stream
-            cv2.imshow("Emotion Detector - Press q to quit", frame)
+            # 10. Display the video stream and capture progress
+            remaining_seconds = max(
+                0, CAPTURE_DURATION_SECONDS - int(elapsed)
+            )
+            status = (
+                f"Saved faces: {saved_images}/{MIN_PREPROCESSED_IMAGES} | "
+                f"Minimum time remaining: {remaining_seconds}s"
+            )
+            cv2.putText(
+                frame,
+                status,
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+                cv2.LINE_AA,
+            )
+            cv2.imshow("Emotion Detector - Webcam capture", frame)
 
-            # Quit when the q key is pressed
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            elapsed = time.monotonic() - capture_started
+            if (
+                elapsed >= CAPTURE_DURATION_SECONDS
+                and saved_images >= MIN_PREPROCESSED_IMAGES
+            ):
+                requirement_met = True
                 break
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                if elapsed < CAPTURE_DURATION_SECONDS:
+                    print(
+                        "Keep the webcam open until the 20-second minimum "
+                        "has elapsed."
+                    )
+                else:
+                    print(
+                        f"Capture stopped with {saved_images} of "
+                        f"{MIN_PREPROCESSED_IMAGES} required face images."
+                    )
+                    break
 
     finally:
         # 11. Release resources, even if an error occurs
         camera.release()
         cv2.destroyAllWindows()
         print("Webcam closed.")
+
+    if not requirement_met:
+        raise RuntimeError(
+            "Webcam capture did not meet the audit requirement: keep it open "
+            f"for at least {CAPTURE_DURATION_SECONDS} seconds and save at "
+            f"least {MIN_PREPROCESSED_IMAGES} face images."
+        )
+
+    print(
+        f"Audit requirement met: captured for at least "
+        f"{CAPTURE_DURATION_SECONDS} seconds and saved {saved_images} "
+        f"preprocessed images in {capture_dir}."
+    )
 
 
 if __name__ == "__main__":
