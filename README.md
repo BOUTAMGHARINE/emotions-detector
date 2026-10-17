@@ -261,15 +261,19 @@ python ./scripts/predict_live_stream.py
 The program:
 1. Loads the trained model once.
 2. Opens the webcam using OpenCV.
-3. Captures video frames.
+3. Captures video frames for at least 20 seconds.
 4. Detects faces using Haar Cascade.
 5. Converts each detected face to grayscale.
 6. Resizes the face to 48 × 48 pixels.
 7. Normalizes the pixels and adds the required dimensions.
 8. Predicts the emotion and its probability.
 9. Displays the result over the webcam image.
+10. Saves at least 20 detected, resized face images as PNG files under
+    `results/preprocessing_test/webcam/`, in a unique capture subfolder.
 
-Press `q` to stop the webcam stream and release the camera.
+The webcam closes automatically when both the 20-second minimum and 20 saved
+images have been reached. Press `q` to stop early after 20 seconds; an early
+stop before all 20 images are saved is reported as an incomplete capture.
 
 ### Recorded Video Fallback
 
@@ -302,7 +306,8 @@ Before submission, verify the following:
 - [ ] The model is trained using training data only, with validation used for monitoring.
 - [ ] The test accuracy is measured on the labeled test dataset.
 - [ ] `predict.py` runs without errors and prints the test accuracy if required by the subject.
-- [ ] At least 20 preprocessed face images are saved and inspected.
+- [ ] `predict_live_stream.py` runs for at least 20 seconds and saves at least
+      20 preprocessed face images in `results/preprocessing_test/webcam/`.
 - [ ] The live webcam pipeline displays emotion predictions and probabilities.
 - [ ] A recorded video fallback is available if the webcam cannot be used.
 - [ ] The learner can explain the architecture, preprocessing, evaluation metrics, and overfitting without reading the code.

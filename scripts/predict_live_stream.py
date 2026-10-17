@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "results/model/final_emotion_model.keras"
 CAPTURE_DURATION_SECONDS = 20
 MIN_PREPROCESSED_IMAGES = 20
+MAX_CONSECUTIVE_READ_FAILURES = 3
 OUTPUT_ROOT = PROJECT_ROOT / "results/preprocessing_test/webcam"
 
 # Mapping between classes and emotions
@@ -61,20 +62,36 @@ def main():
         f"Keep the webcam open for at least {CAPTURE_DURATION_SECONDS} "
         f"seconds and until {MIN_PREPROCESSED_IMAGES} face images are saved."
     )
+    print("Press 'q' to stop the stream.")
     print(f"Preprocessed images will be saved in: {capture_dir}")
 
     last_terminal_output = 0.0
     saved_images = 0
+    consecutive_read_failures = 0
     capture_started = time.monotonic()
     requirement_met = False
-
+##
     try:
         while True:
             # 4. Capture a frame from the webcam
             ret, frame = camera.read()
 
             if not ret:
-                raise RuntimeError("Unable to read a frame from the webcam.")
+                consecutive_read_failures += 1
+                print(
+                    "Warning: unable to read a webcam frame "
+                    f"({consecutive_read_failures}/"
+                    f"{MAX_CONSECUTIVE_READ_FAILURES} consecutive failures).",
+                    flush=True,
+                )
+                if consecutive_read_failures >= MAX_CONSECUTIVE_READ_FAILURES:
+                    raise RuntimeError(
+                        "Unable to read webcam frames after "
+                        f"{MAX_CONSECUTIVE_READ_FAILURES} consecutive attempts."
+                    )
+                continue
+
+            consecutive_read_failures = 0
 
             elapsed = time.monotonic() - capture_started
 
@@ -111,10 +128,7 @@ def main():
                 face = np.expand_dims(face, axis=0)
 
                 # 8. Predict probabilities
-                probabilities = model.predict(
-                    face,
-                    verbose=0,
-                )[0]
+                probabilities = model(face, training=False).numpy()[0]
 
                 emotion_id = int(np.argmax(probabilities))
                 confidence = float(probabilities[emotion_id])
@@ -122,7 +136,7 @@ def main():
 
                 current_time = time.monotonic()
                 if current_time - last_terminal_output >= 1:
-                    print("Preprocessing ...")
+                    print("Preprocessing .......")
                     timestamp = datetime.now().strftime("%H:%M:%S")
                     print(
                         f"{timestamp}s : {emotion} , {confidence:.0%}",
@@ -176,25 +190,18 @@ def main():
             cv2.imshow("Emotion Detector - Webcam capture", frame)
 
             elapsed = time.monotonic() - capture_started
-            if (
-                elapsed >= CAPTURE_DURATION_SECONDS
-                and saved_images >= MIN_PREPROCESSED_IMAGES
-            ):
-                requirement_met = True
-                break
-
             if cv2.waitKey(1) & 0xFF == ord("q"):
-                if elapsed < CAPTURE_DURATION_SECONDS:
+                requirement_met = (
+                    elapsed >= CAPTURE_DURATION_SECONDS
+                    and saved_images >= MIN_PREPROCESSED_IMAGES
+                )
+                if not requirement_met:
                     print(
-                        "Keep the webcam open until the 20-second minimum "
-                        "has elapsed."
+                        "Capture stopped before the audit requirement was met: "
+                        f"{elapsed:.0f}/{CAPTURE_DURATION_SECONDS} seconds, "
+                        f"{saved_images}/{MIN_PREPROCESSED_IMAGES} face images."
                     )
-                else:
-                    print(
-                        f"Capture stopped with {saved_images} of "
-                        f"{MIN_PREPROCESSED_IMAGES} required face images."
-                    )
-                    break
+                break
 
     finally:
         # 11. Release resources, even if an error occurs
